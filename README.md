@@ -25,7 +25,7 @@ Heka supports both Cocoapods and Swift Package Manager for dependency management
 With Cocoapods, add the following to your Podfile:
 
 ```swift
-pod 'heka'
+pod 'HekaCore'
 ```
 
 Then, run `pod install`
@@ -36,7 +36,7 @@ With Swift Package Manager, add the following `dependency` to your `Package.swif
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/HekaHealth/heka-swift-package.git", .upToNextMajor(from: "0.0.5"))
+    .package(url: "https://github.com/HekaHealth/core-ios.git", .upToNextMajor(from: "0.0.1"))
 ]
 ```
 
@@ -56,7 +56,7 @@ dependencies: [
 3) To make sure that health data is being synced even while on background, initialize the sync observers in `application:didFinishLaunchingWithOptions` method of `AppDelegate.swift`:
 
 ```swift
-import heka     // Make sure you import Heka
+import HekaCore     // Make sure you import Heka Core
 
 // ...
 
@@ -71,29 +71,12 @@ func application(_ application: UIApplication,
 
 ## Usage
 
-Import the SDK by adding the following:
-
-```swift
-import heka
-```
-
-To render the UI component with state management and syncing logic plugged in, add the following lines:
-
-```swift
-HekaUIView(
-    uuid: "<user-uuid-goes-here>",
-    apiKey: "<your-api-key-goes-here>"
-)
-```
+The UI components are defined in [heka-swift](https://github.com/HekaHealth/heka-swift-package.git) package.
 
 ## Getting the data
 
 The collected data is unified in a single format and sent to the webhook URL configured while registering the app on our dashboard. Check out our relevant [documentation](https://heka-health.notion.site/Getting-data-on-the-server-Heka-94ae2c8228ad426c9a45f3ac1d7312fe).
 
-
-## Sample app
-
-A sample app that uses the `HekaUIView` can be found at [heka-ios-sample](https://github.com/HekaHealth/heka-ios-sample).
 
 ## FAQs
 
