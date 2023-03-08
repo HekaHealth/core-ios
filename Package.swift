@@ -10,7 +10,7 @@ let package = Package(
     // Products define the executables and libraries a package produces, and make them visible to other packages.
     .library(
       name: "HekaCore",
-      targets: ["heka"])
+      targets: ["HekaCore"])
   ],
   dependencies: [
     .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "5.6.1")),
@@ -21,7 +21,7 @@ let package = Package(
     // Targets are the basic building blocks of a package. A target can define a module or a test suite.
     // Targets can depend on other targets in this package, and on products in packages this package depends on.
     .target(
-      name: "heka",
+      name: "HekaCore",
       dependencies: ["Alamofire", "PromiseKit", .product(name: "Logging", package: "swift-log")],
       path: "Sources",
       resources: [
@@ -29,8 +29,8 @@ let package = Package(
       ]
     ),
     .testTarget(
-      name: "hekaTests",
-      dependencies: ["heka"]),
+      name: "HekaCoreTests",
+      dependencies: ["HekaCore"]),
   ],
   swiftLanguageVersions: [.v5]
 )
