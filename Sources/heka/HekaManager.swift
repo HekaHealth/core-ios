@@ -1,3 +1,5 @@
+import UIKit
+
 public class HekaManager {
 
   public init() {}
