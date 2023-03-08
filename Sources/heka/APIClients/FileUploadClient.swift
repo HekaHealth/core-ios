@@ -1,20 +1,22 @@
 //
-//  FileUploadClinet.swift
-//  
+//  FileUploadClient.swift
+//
 //
 //  Created by Gaurav Tiwari on 19/02/23.
 //
 
-import Foundation
 import Alamofire
+import Foundation
 
 struct FileDetails {
-  
+
   let fileName: String
   let paramName: String
   let mime: String
-  
-  init(fileName: String = "data.json", paramName: String = "data", mime: String = "application/json") {
+
+  init(
+    fileName: String = "data.json", paramName: String = "data", mime: String = "application/json"
+  ) {
     self.fileName = fileName
     self.paramName = paramName
     self.mime = mime
@@ -28,14 +30,14 @@ struct FileUploadClinet {
   private let dataSource: String
 
   private let endpoint: FileUploadEndpoint
-  
+
   init(apiKey: String, userUUID: String, dataSource: String = "sdk_healthkit") {
     self.apiKey = apiKey
     self.userUUID = userUUID
     self.dataSource = dataSource
     endpoint = .userDataJSON(apiKey: apiKey, userUUID: userUUID, dataSource: dataSource)
   }
-  
+
   func uploadUserDataFile(
     from locationURL: URL,
     with fileDetail: FileDetails,
@@ -43,7 +45,7 @@ struct FileUploadClinet {
   ) {
     do {
       let data = try Data(contentsOf: locationURL)
-      
+
       AF.upload(
         multipartFormData: { formData in
           formData.append(
@@ -57,17 +59,17 @@ struct FileUploadClinet {
       )
       .responseData { result in
         switch result.result {
-          case .success(let data):
-            let responseBody = String(data: data, encoding: .utf8)
-            print("___Printing Response body_____")
-            print(responseBody ?? "Invalid response")
-            completion(true)
-          case .failure(let error):
-            print(error.localizedDescription)
-            completion(false)
+        case .success(let data):
+          let responseBody = String(data: data, encoding: .utf8)
+          print("___Printing Response body_____")
+          print(responseBody ?? "Invalid response")
+          completion(true)
+        case .failure(let error):
+          print(error.localizedDescription)
+          completion(false)
         }
       }
-      
+
     } catch {
       print("JSON file not found at: ", locationURL, "With Error: ", error)
       completion(false)
