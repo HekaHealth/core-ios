@@ -7,14 +7,14 @@
 
 import Foundation
 
-struct ConnectedPlatform {
+public struct ConnectedPlatform {
   let platform: String
   let loggedIn: Bool
   let lastSync: String?
   let connectedDeviceUUIDs: [String]?
 }
 
-struct Connection {
+public struct Connection {
   let userUuid: String
   let connectedPlatforms: [String: ConnectedPlatform]
 

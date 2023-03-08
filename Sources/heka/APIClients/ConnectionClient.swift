@@ -7,7 +7,7 @@
 
 import Foundation
 
-typealias ConnectionCompletion = (Result<Connection, Error>) -> Void
+public typealias ConnectionCompletion = (Result<Connection, Error>) -> Void
 
 public struct ConnectionClient {
 
