@@ -32,7 +32,7 @@ public struct ConnectionClient {
   private let userUUID: String
   private let platform: String
 
-  init(apiKey: String, userUUID: String, platform: String) {
+  public init(apiKey: String, userUUID: String, platform: String) {
     self.apiKey = apiKey
     self.userUUID = userUUID
     self.platform = platform

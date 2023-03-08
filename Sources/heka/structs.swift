@@ -18,7 +18,7 @@ public struct Connection {
   let userUuid: String
   let connectedPlatforms: [String: ConnectedPlatform]
 
-  func isPlatformConnected(platform: String) -> Bool {
+  public func isPlatformConnected(platform: String) -> Bool {
     if let connectedPlatform = connectedPlatforms[platform] {
       return connectedPlatform.loggedIn
     } else {
