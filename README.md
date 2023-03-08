@@ -36,7 +36,7 @@ With Swift Package Manager, add the following `dependency` to your `Package.swif
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/HekaHealth/core-ios.git", .upToNextMajor(from: "0.0.1"))
+    .package(url: "https://github.com/HekaHealth/HekaCore.git", .upToNextMajor(from: "0.0.4"))
 ]
 ```
 
@@ -71,7 +71,7 @@ func application(_ application: UIApplication,
 
 ## Usage
 
-The UI components are defined in [heka-swift](https://github.com/HekaHealth/heka-swift-package.git) package.
+The UI components are defined in [HekaSwiftUI](https://github.com/HekaHealth/HekaSwiftUI.git) package.
 
 ## Getting the data
 
