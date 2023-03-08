@@ -17,12 +17,13 @@ public class HekaManager {
   }
 
   public func syncIosHealthData(
-    apiKey: String, userUuid: String, completion: @escaping (Bool) -> Void
+    apiKey: String, userUuid: String, lastSyncDate: Date? = nil,
+    completion: @escaping (Bool) -> Void
   ) {
     healthStore.requestAuthorization { success in
       if success {
-        // TODO: we should pass in last sync date too
-        self.keyChainHelper.markConnected(apiKey: apiKey, uuid: userUuid)
+        self.keyChainHelper.markConnected(
+          apiKey: apiKey, uuid: userUuid, firstUploadDate: lastSyncDate)
         completion(true)
       } else {
         completion(false)
