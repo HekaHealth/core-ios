@@ -122,6 +122,10 @@ class HealthStore {
 
     self.logger.info("executing observer query")
     healthStore!.execute(obsQuery!)
+  }
+
+  public func setupBackgroundDelivery() {
+    let stepCountType = HKObjectType.quantityType(forIdentifier: .stepCount)!
     self.logger.info("enabling background delivery")
     healthStore!.enableBackgroundDelivery(
       for: stepCountType, frequency: .immediate,

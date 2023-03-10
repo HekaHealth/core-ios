@@ -26,6 +26,7 @@ public class HekaManager {
       if success {
         self.keyChainHelper.markConnected(
           apiKey: apiKey, uuid: userUuid, firstUploadDate: lastSyncDate)
+        self.healthStore.setupBackgroundDelivery()
         completion(true)
       } else {
         completion(false)
