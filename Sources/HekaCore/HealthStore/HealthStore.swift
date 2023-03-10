@@ -14,6 +14,7 @@ class HealthStore {
   var healthStore: HKHealthStore?
   var query: HKStatisticsCollectionQuery?
   var obsQuery: HKObserverQuery?
+  var queryInProgress: Bool = false
   private let healthkitDataTypes = HealthKitDataTypes()
 
   private let hekaKeyChainHelper = HekaKeychainHelper()
@@ -83,6 +84,16 @@ class HealthStore {
       let userUuid = self.hekaKeyChainHelper.userUuid
       let apiKey = self.hekaKeyChainHelper.apiKey
 
+      // TODO: this should be replaced with HKAnchoredObjectQuery
+      if self.queryInProgress {
+        self.logger.info("a query in progress, so ignoring the observer query update")
+        completionHandler()
+        return
+      }
+
+      self.queryInProgress = true
+      self.logger.info("marking query in progress")
+
       // Get steps and upload to server
       firstly {
         self.combineResults(healthDataTypes: [
@@ -104,6 +115,8 @@ class HealthStore {
           }
         }
       }
+      self.queryInProgress = false
+      self.logger.info("unmarking query in progress")
       completionHandler()
     }
 
