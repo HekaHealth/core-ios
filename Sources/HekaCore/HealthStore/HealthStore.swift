@@ -161,6 +161,11 @@ class HealthStore {
   ) {
     self.logger.info("sending user data to server, creating JSON file")
     fileHandler.createJSONFile(with: samples) { filePath in
+      if filePath == nil {
+        self.logger.info("failed to create JSON file")
+        completion()
+        return
+      }
       self.uploadClient = FileUploadClinet(
         apiKey: apiKey, userUUID: uuid
       )
