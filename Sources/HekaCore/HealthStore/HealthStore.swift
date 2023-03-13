@@ -74,6 +74,12 @@ class HealthStore {
 
       self.logger.info("we are in the observer query callback")
 
+      if let error = errorOrNil {
+        self.logger.error("error in observer query callback: \(error)")
+        completionHandler()
+        return
+      }
+
       // if we are not connected, let's ignore the update
       if !self.hekaKeyChainHelper.isConnected {
         self.logger.info("we are not connected, so ignoring the observer query update")
