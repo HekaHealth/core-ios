@@ -23,10 +23,7 @@ let package = Package(
     .target(
       name: "HekaCore",
       dependencies: ["Alamofire", "PromiseKit", .product(name: "Logging", package: "swift-log")],
-      path: "Sources",
-      resources: [
-        .process("Resources")
-      ]
+      path: "Sources"
     ),
     .testTarget(
       name: "HekaCoreTests",
