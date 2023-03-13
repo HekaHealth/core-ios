@@ -94,30 +94,36 @@ class HealthStore {
       self.queryInProgress = true
       self.logger.info("marking query in progress")
 
+      let currentDate = Date()
+
       // Get steps and upload to server
       firstly {
-        self.combineResults(healthDataTypes: [
-          self.healthkitDataTypes.STEPS, self.healthkitDataTypes.HEART_RATE,
-          self.healthkitDataTypes.DISTANCE_WALKING_RUNNING,
-          self.healthkitDataTypes.ACTIVE_ENERGY_BURNED,
-          self.healthkitDataTypes.BLOOD_PRESSURE_SYSTOLIC, self.healthkitDataTypes.BLOOD_OXYGEN,
-          self.healthkitDataTypes.BLOOD_GLUCOSE,
-          self.healthkitDataTypes.BODY_TEMPERATURE, self.healthkitDataTypes.HEIGHT,
-          self.healthkitDataTypes.WEIGHT,
-          self.healthkitDataTypes.BODY_MASS_INDEX,
-          self.healthkitDataTypes.WATER,
-          self.healthkitDataTypes.BODY_FAT_PERCENTAGE,
-        ])
+        self.combineResults(
+          healthDataTypes: [
+            self.healthkitDataTypes.STEPS, self.healthkitDataTypes.HEART_RATE,
+            self.healthkitDataTypes.DISTANCE_WALKING_RUNNING,
+            self.healthkitDataTypes.ACTIVE_ENERGY_BURNED,
+            self.healthkitDataTypes.BLOOD_PRESSURE_SYSTOLIC, self.healthkitDataTypes.BLOOD_OXYGEN,
+            self.healthkitDataTypes.BLOOD_GLUCOSE,
+            self.healthkitDataTypes.BODY_TEMPERATURE, self.healthkitDataTypes.HEIGHT,
+            self.healthkitDataTypes.WEIGHT,
+            self.healthkitDataTypes.BODY_MASS_INDEX,
+            self.healthkitDataTypes.WATER,
+            self.healthkitDataTypes.BODY_FAT_PERCENTAGE,
+          ],
+          currentDate: currentDate)
       }.done { samples in
         if !samples.isEmpty {
           self.logger.info("got the samples in the observer query callback, sending them to server")
-          self.handleUserData(with: samples, apiKey: apiKey!, uuid: userUuid!) {
+          self.handleUserData(
+            with: samples, apiKey: apiKey!, uuid: userUuid!, currentDate: currentDate
+          ) {
+            self.queryInProgress = false
+            self.logger.info("unmarking query in progress")
+            completionHandler()
           }
         }
       }
-      self.queryInProgress = false
-      self.logger.info("unmarking query in progress")
-      completionHandler()
     }
 
     self.logger.info("executing observer query")
@@ -144,6 +150,7 @@ class HealthStore {
   private func handleUserData(
     with samples: [String: Any],
     apiKey: String, uuid: String,
+    currentDate: Date,
     with completion: @escaping () -> Void
   ) {
     self.logger.info("sending user data to server, creating JSON file")
@@ -157,7 +164,7 @@ class HealthStore {
       ) { syncSuccessful in
         switch syncSuccessful {
         case true:
-          self.hekaKeyChainHelper.markFirstUpload()
+          self.hekaKeyChainHelper.markFirstUpload(syncDate: currentDate)
           self.logger.info("Data synced successfully")
         case false:
           self.logger.info("Data synced failed")
@@ -168,13 +175,15 @@ class HealthStore {
     }
   }
 
-  func combineResults(healthDataTypes: [String]) -> Promise<[String: [NSDictionary]]> {
+  func combineResults(healthDataTypes: [String], currentDate: Date) -> Promise<
+    [String: [NSDictionary]]
+  > {
     self.logger.info("fetching data for various data types and combining it")
     var promises = [Promise<[NSDictionary]>]()
     var results: [String: [NSDictionary]] = [:]
 
     for healthDataType in healthDataTypes {
-      promises.append(getSamples(type: healthDataType))
+      promises.append(getSamples(type: healthDataType, currentDate: currentDate))
     }
 
     return when(fulfilled: promises).map { value in
@@ -187,29 +196,31 @@ class HealthStore {
     }
   }
 
-  func getSamples(type: String) -> Promise<[NSDictionary]> {
+  func getSamples(type: String, currentDate: Date) -> Promise<[NSDictionary]> {
     return Promise<[NSDictionary]> { seal in
       getDataFromType(
         dataTypeKey: type,
+        currentDate: currentDate,
         completion: { dict in
           seal.fulfill(dict)
         })
     }
   }
 
-  func getDataFromType(dataTypeKey: String, completion: @escaping ([NSDictionary]) -> Void) {
+  func getDataFromType(
+    dataTypeKey: String, currentDate: Date, completion: @escaping ([NSDictionary]) -> Void
+  ) {
     self.logger.info("getting data for data type: \(dataTypeKey)")
     let dataType = self.healthkitDataTypes.dataTypesDict[dataTypeKey]
     var predicate: NSPredicate? = nil
 
     if let lastSync = hekaKeyChainHelper.lastSyncDate {
       predicate = HKQuery.predicateForSamples(
-        withStart: lastSync, end: Date(), options: .strictStartDate)
+        withStart: lastSync, end: currentDate, options: .strictStartDate)
     } else {
-      let today = Date()
-      let start = Calendar.current.date(byAdding: .day, value: -120, to: today)!
+      let start = Calendar.current.date(byAdding: .day, value: -120, to: currentDate)!
       predicate = HKQuery.predicateForSamples(
-        withStart: start, end: today, options: .strictStartDate)
+        withStart: start, end: currentDate, options: .strictStartDate)
     }
 
     let q = HKSampleQuery(

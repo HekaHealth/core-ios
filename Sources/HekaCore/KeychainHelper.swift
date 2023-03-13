@@ -45,11 +45,11 @@ final class HekaKeychainHelper {
     }
   }
 
-  func markFirstUpload() {
+  func markFirstUpload(syncDate: Date) {
     logger.info("marking first upload in keychain")
     var data =
       keychainData ?? KeychainData(apiKey: "", uuid: "", connected: false, firstUploadDate: nil)
-    data.firstUploadDate = Date()
+    data.firstUploadDate = syncDate
     keychainData = data
   }
 
