@@ -1,12 +1,12 @@
 //
 //  Endpoint.swift
-//  
+//
 //
 //  Created by Gaurav Tiwari on 19/02/23.
 //
 
-import Foundation
 import Alamofire
+import Foundation
 
 typealias WebResponse = (Result<[String: Any], Error>) -> Void
 
@@ -17,16 +17,16 @@ protocol Endpoint {
   var encoding: ParameterEncoding { get }
 }
 
-  //MARK: - Common Properties and Configurations
+//MARK: - Common Properties and Configurations
 extension Endpoint {
   var base: String {
-    "https://apidev.hekahealth.co/watch_sdk"
+    "https://heka-backend.delightfulmeadow-20fa0dd3.australiaeast.azurecontainerapps.io/watch_sdk"
   }
-  
+
   var encoding: ParameterEncoding {
     return JSONEncoding.default
   }
-  
+
   var header: HTTPHeaders {
     var headers = HTTPHeaders()
     headers["Content-Type"] = "application/json"
@@ -34,7 +34,7 @@ extension Endpoint {
   }
 }
 
-  //MARK: - Webservice Interaction Method
+//MARK: - Webservice Interaction Method
 extension Endpoint {
   /**
    Method for interacting with the server for data
@@ -47,52 +47,56 @@ extension Endpoint {
     withHiddenError: Bool = false,
     responseClosure: @escaping WebResponse
   ) {
-    
+
     if !NetworkReachabilityManager()!.isReachable {
       //TODO: - Throw error here
       return
     }
-    
+
     printRequest()
-    
+
     AF.request(
       url, method: method, parameters: parameters, encoding: encoding
     ).response { result in
       self.handle(result.result, responseClosure: responseClosure)
     }
   }
-  
+
   private func printRequest() {
-    debugPrint("********************************* API Request **************************************")
+    debugPrint(
+      "********************************* API Request **************************************")
     debugPrint("Request URL:\(url)")
     debugPrint("Request Parameters: \(parameters ?? [:])")
     debugPrint("Request Headers: \(header)")
   }
-  
+
   private func handle(_ response: Result<Data?, AFError>, responseClosure: WebResponse) {
     switch response {
-      case .success(let data):
-        debugPrint("Response:---------->")
-        if let data = data {
-          debugPrint(NSString(data: data, encoding: String.Encoding.utf8.rawValue) ?? "")
-          
-          do {
-            let dictionary = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
-            responseClosure(.success(dictionary ?? [:]))
-          } catch {
-            print(error.localizedDescription)
-          }
+    case .success(let data):
+      debugPrint("Response:---------->")
+      if let data = data {
+        debugPrint(NSString(data: data, encoding: String.Encoding.utf8.rawValue) ?? "")
 
-        } else {
-          debugPrint("No Data found in the response")
-          responseClosure(.success([:]))
+        do {
+          let dictionary =
+            try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
+          responseClosure(.success(dictionary ?? [:]))
+        } catch {
+          print(error.localizedDescription)
         }
-        debugPrint("************************************************************************************")
-      case .failure(let error):
-        debugPrint("Response:---------->")
-        debugPrint(error.localizedDescription)
-        debugPrint("************************************************************************************")
-        responseClosure(.failure(error))
+
+      } else {
+        debugPrint("No Data found in the response")
+        responseClosure(.success([:]))
+      }
+      debugPrint(
+        "************************************************************************************")
+    case .failure(let error):
+      debugPrint("Response:---------->")
+      debugPrint(error.localizedDescription)
+      debugPrint(
+        "************************************************************************************")
+      responseClosure(.failure(error))
     }
   }
 }
