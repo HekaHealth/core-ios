@@ -82,61 +82,66 @@ class HealthStore {
         completionHandler()
         return
       }
-
       // if we are not connected, let's ignore the update
       if !self.hekaKeyChainHelper.isConnected {
         self.logger.info("we are not connected, so ignoring the observer query update")
         completionHandler()
         return
       }
-      self.logger.info("we are connected, so we will sync the data")
-      let userUuid = self.hekaKeyChainHelper.userUuid
-      let apiKey = self.hekaKeyChainHelper.apiKey
 
-      // TODO: this should be replaced with HKAnchoredObjectQuery
-      if self.queryInProgress {
-        self.logger.info("a query in progress, so ignoring the observer query update")
+      self.triggerSync {
         completionHandler()
-        return
-      }
-
-      self.queryInProgress = true
-      self.logger.info("marking query in progress")
-
-      let currentDate = Date()
-
-      // Get steps and upload to server
-      firstly {
-        self.combineResults(
-          healthDataTypes: [
-            self.healthkitDataTypes.STEPS, self.healthkitDataTypes.HEART_RATE,
-            self.healthkitDataTypes.DISTANCE_WALKING_RUNNING,
-            self.healthkitDataTypes.ACTIVE_ENERGY_BURNED,
-            self.healthkitDataTypes.BLOOD_PRESSURE_SYSTOLIC, self.healthkitDataTypes.BLOOD_OXYGEN,
-            self.healthkitDataTypes.BLOOD_GLUCOSE,
-            self.healthkitDataTypes.BODY_TEMPERATURE, self.healthkitDataTypes.HEIGHT,
-            self.healthkitDataTypes.WEIGHT,
-            self.healthkitDataTypes.BODY_MASS_INDEX,
-            self.healthkitDataTypes.WATER,
-            self.healthkitDataTypes.BODY_FAT_PERCENTAGE,
-          ],
-          currentDate: currentDate)
-      }.done { samples in
-        if !samples.isEmpty {
-          self.logger.info("got the samples in the observer query callback, sending them to server")
-          self.handleUserData(
-            with: samples, apiKey: apiKey!, uuid: userUuid!, currentDate: currentDate
-          ) {
-            self.queryInProgress = false
-            self.logger.info("unmarking query in progress")
-            completionHandler()
-          }
-        }
       }
     }
 
     self.logger.info("executing observer query")
     healthStore!.execute(obsQuery!)
+  }
+
+  public func triggerSync(completion: @escaping () -> Void) {
+    // TODO: this should be replaced with HKAnchoredObjectQuery
+    if self.queryInProgress {
+      self.logger.info("a query in progress, so ignoring the observer query update")
+      return completion()
+    }
+
+    self.logger.info("triggering sync")
+    let userUuid = self.hekaKeyChainHelper.userUuid
+    let apiKey = self.hekaKeyChainHelper.apiKey
+
+    self.queryInProgress = true
+    self.logger.info("marking query in progress")
+
+    let currentDate = Date()
+
+    // Get steps and upload to server
+    firstly {
+      self.combineResults(
+        healthDataTypes: [
+          self.healthkitDataTypes.STEPS, self.healthkitDataTypes.HEART_RATE,
+          self.healthkitDataTypes.DISTANCE_WALKING_RUNNING,
+          self.healthkitDataTypes.ACTIVE_ENERGY_BURNED,
+          self.healthkitDataTypes.BLOOD_PRESSURE_SYSTOLIC, self.healthkitDataTypes.BLOOD_OXYGEN,
+          self.healthkitDataTypes.BLOOD_GLUCOSE,
+          self.healthkitDataTypes.BODY_TEMPERATURE, self.healthkitDataTypes.HEIGHT,
+          self.healthkitDataTypes.WEIGHT,
+          self.healthkitDataTypes.BODY_MASS_INDEX,
+          self.healthkitDataTypes.WATER,
+          self.healthkitDataTypes.BODY_FAT_PERCENTAGE,
+        ],
+        currentDate: currentDate)
+    }.done { samples in
+      if !samples.isEmpty {
+        self.logger.info("got the samples in the observer query callback, sending them to server")
+        self.handleUserData(
+          with: samples, apiKey: apiKey!, uuid: userUuid!, currentDate: currentDate
+        ) {
+          self.queryInProgress = false
+          self.logger.info("unmarking query in progress")
+          return completion()
+        }
+      }
+    }
   }
 
   public func setupBackgroundDelivery() {
