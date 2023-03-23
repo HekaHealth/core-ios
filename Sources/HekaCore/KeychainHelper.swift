@@ -53,7 +53,9 @@ final class HekaKeychainHelper {
     keychainData = data
   }
 
-  func markConnected(apiKey: String, uuid: String, firstUploadDate: Date? = nil) {
+  func markConnected(
+    apiKey: String, uuid: String, firstUploadDate: Date? = nil, completion: @escaping () -> Void
+  ) {
     logger.info("marking connected in keychain")
     var data =
       keychainData ?? KeychainData(apiKey: "", uuid: "", connected: false, firstUploadDate: nil)
@@ -62,9 +64,9 @@ final class HekaKeychainHelper {
     data.uuid = uuid
     data.firstUploadDate = firstUploadDate
     keychainData = data
+    completion()
   }
 
-  // TODO: add handling of last sync time
   func markDisconnected() {
     logger.info("marking disconnected in keychain")
     var data =
