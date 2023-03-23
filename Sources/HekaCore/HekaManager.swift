@@ -22,14 +22,19 @@ public class HekaManager {
     apiKey: String, userUuid: String, lastSyncDate: Date? = nil,
     completion: @escaping (Bool) -> Void
   ) {
-    healthStore.requestAuthorization { success in
-      if success {
-        self.keyChainHelper.markConnected(
-          apiKey: apiKey, uuid: userUuid, firstUploadDate: lastSyncDate)
-        self.healthStore.setupBackgroundDelivery()
-        completion(true)
-      } else {
-        completion(false)
+    self.keyChainHelper.markConnected(
+      apiKey: apiKey, uuid: userUuid, firstUploadDate: lastSyncDate
+    ) {
+      self.healthStore.setupBackgroundDelivery()
+      self.healthStore.requestAuthorization { success in
+        if success {
+          DispatchQueue.global(qos: .background).async {
+            self.healthStore.triggerSync {}
+          }
+          completion(true)
+        } else {
+          completion(false)
+        }
       }
     }
   }
