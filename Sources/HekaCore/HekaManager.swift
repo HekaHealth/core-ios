@@ -13,9 +13,9 @@ public class HekaManager {
     }
   }
 
-  public func stopSyncing() -> Bool {
-    keyChainHelper.markDisconnected()
-    return true
+  public func stopSyncing(completion: @escaping (Bool) -> Void) {
+    self.keyChainHelper.markDisconnected()
+    completion(true)
   }
 
   public func syncIosHealthData(
