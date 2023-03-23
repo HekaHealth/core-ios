@@ -34,6 +34,7 @@ class HealthStore {
   func requestAuthorization(completion: @escaping (Bool) -> Void) {
     self.logger.info("requesting authorization from healthkit")
     guard let healthStore = self.healthStore else {
+      self.logger.info("healthstore not found, returning false")
       return completion(false)
     }
 
@@ -41,10 +42,12 @@ class HealthStore {
       toShare: [], read: Set(self.healthkitDataTypes.healthDataTypes)
     ) { bool, error in
       if error != nil {
+        self.logger.info("request auth returned error, returning false")
         return completion(false)
       } else if bool == true {
         return completion(true)
       } else {
+        self.logger.info("request auth returned false, returning false")
         return completion(false)
       }
 
