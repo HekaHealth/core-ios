@@ -95,7 +95,9 @@ class HealthStore {
     }
 
     self.logger.info("executing observer query")
-    healthStore!.execute(obsQuery!)
+      if healthStore != nil {
+        healthStore!.execute(obsQuery!)
+      }
   }
 
   public func triggerSync(completion: @escaping () -> Void) {
