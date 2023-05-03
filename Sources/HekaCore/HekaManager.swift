@@ -43,3 +43,7 @@ public class HekaManager {
     healthStore.setupObserverQuery()
   }
 }
+
+public func getDeviceId() -> String {
+  UIDevice.current.identifierForVendor!.uuidString
+}
