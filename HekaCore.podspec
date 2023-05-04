@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
     s.name             = 'HekaCore'
-    s.version          = '0.0.10'
+    s.version          = '0.0.11'
     s.summary          = 'Integrate fitness data sources into your app.'
     s.homepage         = 'https://www.hekahealth.co'
     s.license          = { :type => 'GNU AGPL', :file => 'LICENSE' }
