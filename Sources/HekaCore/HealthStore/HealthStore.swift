@@ -328,33 +328,6 @@ class HealthStore {
 
         completion(dictionaries)
 
-      // if #available(iOS 13.0, *) {
-      //   case let (samplesAudiogram as [HKAudiogramSample]) as Any:
-      //       print("HKAudiogram Sample type data found: ")
-      //       let dictionaries = samplesAudiogram.map { sample -> NSDictionary in
-      //           var frequencies = [Double]()
-      //           var leftEarSensitivities = [Double]()
-      //           var rightEarSensitivities = [Double]()
-      //           for samplePoint in sample.sensitivityPoints {
-      //               frequencies.append(samplePoint.frequency.doubleValue(for: HKUnit.hertz()))
-      //               // leftEarSensitivities.append(samplePoint.leftEarSensitivity!.doubleValue(for: HKUnit.decibelHearingLevel()))
-      //               // rightEarSensitivities.append(samplePoint.rightEarSensitivity!.doubleValue(for: HKUnit.decibelHearingLevel()))
-      //           }
-      //           return [
-      //               "uuid": "\(sample.uuid)",
-      //               "frequencies": frequencies,
-      //               "leftEarSensitivities": leftEarSensitivities,
-      //               "rightEarSensitivities": rightEarSensitivities,
-      //               "date_from": Int(sample.startDate.timeIntervalSince1970 * 1000),
-      //               "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
-      //               "source_id": sample.sourceRevision.source.bundleIdentifier,
-      //               "source_name": sample.sourceRevision.source.name
-      //           ]
-      //       }
-
-      //       completion(dictionaries)
-      // }
-
       default:
         print("Nothing found!")
         completion([])
