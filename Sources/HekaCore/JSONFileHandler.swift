@@ -16,7 +16,7 @@ final class JSONFileHandler {
       let documentDirectory = FileManager.default
         .urls(for: .documentDirectory, in: .userDomainMask).first
     else {
-      print("Cannot loacate the document directory")
+      print("Cannot locate the document directory")
       return nil
     }
     return documentDirectory.appendingPathComponent(fileName)
@@ -37,6 +37,8 @@ final class JSONFileHandler {
     }
 
     do {
+      // make sure we clear any old data first
+      try deleteJSONFile()
       try jsonString.write(to: filePath, atomically: true, encoding: .utf8)
       completion(filePath)
     } catch (let error) {

@@ -60,6 +60,14 @@ struct FileUploadClinet {
       .responseData { result in
         switch result.result {
         case .success(let data):
+          // check the response status code
+          print("___Printing Response Code_____")
+          print(result.response?.statusCode ?? 0)
+          // complete false is status code is not 200
+          guard result.response?.statusCode == 200 else {
+            completion(false)
+            return
+          }
           let responseBody = String(data: data, encoding: .utf8)
           print("___Printing Response body_____")
           print(responseBody ?? "Invalid response")
