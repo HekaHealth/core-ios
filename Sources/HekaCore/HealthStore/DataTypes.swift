@@ -103,6 +103,8 @@ class HealthKitDataTypes {
   let HEADACHE_MILD = "HEADACHE_MILD"
   let HEADACHE_MODERATE = "HEADACHE_MODERATE"
   let HEADACHE_SEVERE = "HEADACHE_SEVERE"
+  let MENSTRUAL_FLOW = "MENSTRUAL_FLOW"
+  let SLEEP_ANALYSIS = "SLEEP_ANALYSIS"
 
   func initDataTypesDict() {
     // Set up iOS 13 specific types (ordinary health data types)
@@ -156,6 +158,8 @@ class HealthKitDataTypes {
       dataTypesDict[SLEEP_AWAKE] = HKSampleType.categoryType(forIdentifier: .sleepAnalysis)!
       dataTypesDict[EXERCISE_TIME] = HKSampleType.quantityType(forIdentifier: .appleExerciseTime)!
       dataTypesDict[WORKOUT] = HKSampleType.workoutType()
+      dataTypesDict[MENSTRUAL_FLOW] = HKSampleType.categoryType(forIdentifier: .menstrualFlow)!
+      dataTypesDict[SLEEP_ANALYSIS] = HKSampleType.categoryType(forIdentifier: .sleepAnalysis)!
 
       healthDataTypes = Array(dataTypesDict.values)
     }

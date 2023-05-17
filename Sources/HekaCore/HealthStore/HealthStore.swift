@@ -15,6 +15,7 @@ class HealthStore {
   var query: HKStatisticsCollectionQuery?
   var obsQuery: HKObserverQuery?
   var queryInProgress: Bool = false
+  var pendingAnchorUpdates: [String: HKQueryAnchor] = [:]
   private let healthkitDataTypes = HealthKitDataTypes()
 
   private let hekaKeyChainHelper = HekaKeychainHelper()
@@ -29,6 +30,16 @@ class HealthStore {
       healthkitDataTypes.initDataTypeToUnit()
       healthkitDataTypes.initDataTypesDict()
     }
+  }
+
+  func writePendingAnchorUpdates() {
+    self.logger.info("writing pending anchor updates")
+    let pendingAnchorUpdates = self.pendingAnchorUpdates
+    for (key, value) in pendingAnchorUpdates {
+      self.logger.info("writing pending anchor update for \(key)")
+      self.hekaKeyChainHelper.setAnchor(value, for: key)
+    }
+    self.pendingAnchorUpdates = [:]
   }
 
   func requestAuthorization(completion: @escaping (Bool) -> Void) {
@@ -95,9 +106,9 @@ class HealthStore {
     }
 
     self.logger.info("executing observer query")
-      if healthStore != nil {
-        healthStore!.execute(obsQuery!)
-      }
+    if healthStore != nil {
+      healthStore!.execute(obsQuery!)
+    }
   }
 
   public func triggerSync(completion: @escaping () -> Void) {
@@ -116,21 +127,28 @@ class HealthStore {
 
     let currentDate = Date()
 
+    var healthDataTypesToFetch: [String] = [
+      self.healthkitDataTypes.STEPS, self.healthkitDataTypes.HEART_RATE,
+      self.healthkitDataTypes.DISTANCE_WALKING_RUNNING,
+      self.healthkitDataTypes.ACTIVE_ENERGY_BURNED,
+      self.healthkitDataTypes.BLOOD_PRESSURE_SYSTOLIC, self.healthkitDataTypes.BLOOD_OXYGEN,
+      self.healthkitDataTypes.BLOOD_GLUCOSE,
+      self.healthkitDataTypes.BODY_TEMPERATURE, self.healthkitDataTypes.HEIGHT,
+      self.healthkitDataTypes.WEIGHT,
+      self.healthkitDataTypes.BODY_MASS_INDEX,
+      self.healthkitDataTypes.WATER,
+      self.healthkitDataTypes.BODY_FAT_PERCENTAGE,
+    ]
+
+    if #available(iOS 13.0, *) {
+      healthDataTypesToFetch.append(self.healthkitDataTypes.MENSTRUAL_FLOW)
+      healthDataTypesToFetch.append(self.healthkitDataTypes.SLEEP_ANALYSIS)
+    }
+
     // Get steps and upload to server
     firstly {
       self.combineResults(
-        healthDataTypes: [
-          self.healthkitDataTypes.STEPS, self.healthkitDataTypes.HEART_RATE,
-          self.healthkitDataTypes.DISTANCE_WALKING_RUNNING,
-          self.healthkitDataTypes.ACTIVE_ENERGY_BURNED,
-          self.healthkitDataTypes.BLOOD_PRESSURE_SYSTOLIC, self.healthkitDataTypes.BLOOD_OXYGEN,
-          self.healthkitDataTypes.BLOOD_GLUCOSE,
-          self.healthkitDataTypes.BODY_TEMPERATURE, self.healthkitDataTypes.HEIGHT,
-          self.healthkitDataTypes.WEIGHT,
-          self.healthkitDataTypes.BODY_MASS_INDEX,
-          self.healthkitDataTypes.WATER,
-          self.healthkitDataTypes.BODY_FAT_PERCENTAGE,
-        ],
+        healthDataTypes: healthDataTypesToFetch,
         currentDate: currentDate)
     }.done { samples in
       if !samples.isEmpty {
@@ -185,8 +203,9 @@ class HealthStore {
       ) { syncSuccessful in
         switch syncSuccessful {
         case true:
-          self.hekaKeyChainHelper.markFirstUpload(syncDate: currentDate)
           self.logger.info("Data synced successfully")
+          self.hekaKeyChainHelper.markFirstUpload(syncDate: currentDate)
+          self.writePendingAnchorUpdates()
         case false:
           self.logger.info("Data synced failed")
         }
@@ -234,24 +253,41 @@ class HealthStore {
     self.logger.info("getting data for data type: \(dataTypeKey)")
     let dataType = self.healthkitDataTypes.dataTypesDict[dataTypeKey]
     var predicate: NSPredicate? = nil
+    var anchor: HKQueryAnchor? = self.hekaKeyChainHelper.getAnchor(for: dataTypeKey)
 
-    if let lastSync = hekaKeyChainHelper.lastSyncDate {
-      predicate = HKQuery.predicateForSamples(
-        withStart: lastSync, end: currentDate, options: .strictStartDate)
-    } else {
-      let start = Calendar.current.date(byAdding: .day, value: -120, to: currentDate)!
-      predicate = HKQuery.predicateForSamples(
-        withStart: start, end: currentDate, options: .strictStartDate)
+    if anchor == nil {
+      anchor = HKQueryAnchor(fromValue: Int(HKAnchoredObjectQueryNoAnchor))
+      // we only use the time based predicate if we don't have an anchor
+      if let lastSync = self.hekaKeyChainHelper.lastSyncDate {
+        predicate = HKQuery.predicateForSamples(
+          withStart: lastSync, end: currentDate, options: .strictStartDate)
+      } else {
+        let start = Calendar.current.date(byAdding: .day, value: -2, to: currentDate)!
+        predicate = HKQuery.predicateForSamples(
+          withStart: start, end: currentDate, options: .strictStartDate)
+      }
     }
 
-    let q = HKSampleQuery(
-      sampleType: dataType!, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil
+    let q = HKAnchoredObjectQuery(
+      type: dataType!, predicate: predicate, anchor: anchor!, limit: HKObjectQueryNoLimit
     ) {
-      x, samplesOrNil, error in
+      (x, samplesOrNil, deletedObjectsOrNil, newAnchor, error) in
+
+      guard error == nil else {
+        self.logger.error("Error in getting \(dataTypeKey) data: \(error!)")
+        completion([])
+        return
+      }
+
+      self.pendingAnchorUpdates[dataTypeKey] = newAnchor
 
       switch samplesOrNil {
       case let (samples as [HKQuantitySample]) as Any:
-        print("HKQuantity Sample type data found: ")
+        if samples.isEmpty {
+          completion([])
+          return
+        }
+        self.logger.info("got \(samples.count) samples for \(dataTypeKey)")
         let unit = self.healthkitDataTypes.dataTypeToUnit[dataTypeKey]
 
         let dictionaries = samples.map { sample -> NSDictionary in

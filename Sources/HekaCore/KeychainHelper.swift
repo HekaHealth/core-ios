@@ -5,6 +5,7 @@
 //  Created by Gaurav Tiwari on 16/02/23.
 //
 
+import HealthKit
 import Logging
 import Security
 import UIKit
@@ -26,6 +27,28 @@ final class HekaKeychainHelper {
     } else {
       return "hekaSDKData"
     }
+  }
+
+  private var anchorKey: String {
+    return keychainKey + ".anchor"
+  }
+
+  func getAnchor(for dataType: String) -> HKQueryAnchor? {
+    let typeKey = anchorKey + "." + dataType
+    logger.info("Getting anchor for \(dataType)")
+    guard let data = load(key: typeKey) else {
+        return nil
+    }
+    return try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: data)
+  }
+
+  func setAnchor(_ anchor: HKQueryAnchor, for dataType: String) {
+    let typeKey = anchorKey + "." + dataType
+    logger.info("Setting anchor for \(dataType)")
+    guard let data = try? NSKeyedArchiver.archivedData(withRootObject: anchor, requiringSecureCoding: true) else {
+        return
+    }
+    _ = save(key: typeKey, data: data)
   }
 
   private var keychainData: KeychainData? {
