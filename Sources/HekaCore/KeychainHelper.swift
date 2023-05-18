@@ -23,9 +23,9 @@ final class HekaKeychainHelper {
 
   private var keychainKey: String {
     if let bundleIdentifier = Bundle.main.bundleIdentifier {
-      return bundleIdentifier + ".hekaSDKData"
+      return bundleIdentifier + ".hekaSDKDataTest"
     } else {
-      return "hekaSDKData"
+      return "hekaSDKDataTest"
     }
   }
 
