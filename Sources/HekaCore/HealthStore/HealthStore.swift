@@ -128,16 +128,9 @@ class HealthStore {
     let currentDate = Date()
 
     var healthDataTypesToFetch: [String] = [
-      self.healthkitDataTypes.STEPS, self.healthkitDataTypes.HEART_RATE,
+      self.healthkitDataTypes.STEPS,
       self.healthkitDataTypes.DISTANCE_WALKING_RUNNING,
       self.healthkitDataTypes.ACTIVE_ENERGY_BURNED,
-      self.healthkitDataTypes.BLOOD_PRESSURE_SYSTOLIC, self.healthkitDataTypes.BLOOD_OXYGEN,
-      self.healthkitDataTypes.BLOOD_GLUCOSE,
-      self.healthkitDataTypes.BODY_TEMPERATURE, self.healthkitDataTypes.HEIGHT,
-      self.healthkitDataTypes.WEIGHT,
-      self.healthkitDataTypes.BODY_MASS_INDEX,
-      self.healthkitDataTypes.WATER,
-      self.healthkitDataTypes.BODY_FAT_PERCENTAGE,
     ]
 
     if #available(iOS 13.0, *) {
