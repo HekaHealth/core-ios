@@ -262,7 +262,7 @@ class HealthStore {
         predicate = HKQuery.predicateForSamples(
           withStart: lastSync, end: currentDate, options: .strictStartDate)
       } else {
-        let start = Calendar.current.date(byAdding: .day, value: -2, to: currentDate)!
+        let start = Calendar.current.date(byAdding: .day, value: -15, to: currentDate)!
         predicate = HKQuery.predicateForSamples(
           withStart: start, end: currentDate, options: .strictStartDate)
       }
