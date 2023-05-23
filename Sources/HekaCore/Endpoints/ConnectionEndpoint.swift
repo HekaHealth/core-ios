@@ -30,7 +30,6 @@ enum ConnectionEndpoint: Endpoint {
         let queryItems = [
           URLQueryItem(name: "key", value: apiKey),
           URLQueryItem(name: "user_uuid", value: userUUID),
-          URLQueryItem(name: "disconnect", value: String(true))
         ]
         var components = URLComponents(string: "\(base)/connect_platform_for_user")!
         components.queryItems = queryItems
@@ -68,7 +67,8 @@ enum ConnectionEndpoint: Endpoint {
       case .disconnect(_, _, let platformIdentifier):
         return [
           "platform": platformIdentifier,
-          "device_id": UIDevice.current.identifierForVendor!.uuidString
+          "device_id": UIDevice.current.identifierForVendor!.uuidString,
+          "disconnect": true
         ]
     }
   }
