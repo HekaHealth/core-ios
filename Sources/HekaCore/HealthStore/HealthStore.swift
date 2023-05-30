@@ -180,7 +180,13 @@ class HealthStore {
     currentDate: Date,
     with completion: @escaping () -> Void
   ) {
-    self.logger.info("sending user data to server, creating JSON file")
+    var totalCount = 0
+    for (_, value) in samples {
+      if let value = value as? [NSDictionary] {
+        totalCount += value.count
+      }
+    }
+    self.logger.info("sending \(samples.count) samples to server")
     fileHandler.createJSONFile(with: samples) { filePath in
       if filePath == nil {
         self.logger.info("failed to create JSON file")
