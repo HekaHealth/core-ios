@@ -246,6 +246,28 @@ class HealthStore {
     }
   }
 
+  func getAggregatedValueCount(startDate: Date, endDate: Date, dataTypeKey: String)
+    -> Double?
+  {
+    self.logger.info("getting aggregated value count for \(dataTypeKey) from \(startDate) to \(endDate)")
+    let dataType : HKSampleType = self.healthkitDataTypes.dataTypes[dataTypeKey]!
+    let healthStore = HKHealthStore()
+    let predicate = HKQuery.predicateForSamples(
+      withStart: startDate, end: endDate, options: .strictStartDate)
+    let query = HKStatisticsQuery(
+      quantityType: HKObjectType.quantityType(forIdentifier: dataType)!,
+      quantitySamplePredicate: predicate, options: .cumulativeSum
+    ) { (_, result, error) in
+      guard let result = result, let sum = result.sumQuantity() else {
+        self.logger.info("Failed to fetch aggregated data")
+        return
+      }
+      let count = Double(sum.doubleValue(for: HKUnit.count()))
+    }
+    healthStore.execute(query)
+    return count
+  }
+
   func getDataFromType(
     dataTypeKey: String, currentDate: Date, completion: @escaping ([NSDictionary]) -> Void
   ) {
