@@ -246,8 +246,8 @@ class HealthStore {
     }
   }
 
-  func getAggregatedValueCount(startDate: Date, endDate: Date, dataTypeKey: String)
-    -> Double?
+    func getAggregatedValueCount(startDate: Date, endDate: Date, dataTypeKey: String, completion: @escaping (Double?) -> Void)
+   
   {
     self.logger.info("getting aggregated value count for \(dataTypeKey) from \(startDate) to \(endDate)")
   //  let dataType : HKSampleType = self.healthkitDataTypes.dataTypesDict[dataTypeKey]!
@@ -266,9 +266,10 @@ class HealthStore {
         return
       }
       count = Double(sum.doubleValue(for: HKUnit.count()))
+      completion(count)
     }
     healthStore.execute(query)
-    return count
+   
   }
 
   func getDataFromType(
