@@ -246,6 +246,46 @@ class HealthStore {
     }
   }
 
+  func getAggregatedValueCount(
+    startDate: Date, endDate: Date, dataTypeKey: String, completion: @escaping (Double?) -> Void
+  ) {
+    self.logger.info(
+      "getting aggregated value count for \(dataTypeKey) from \(startDate) to \(endDate)")
+    //  let dataType : HKSampleType = self.healthkitDataTypes.dataTypesDict[dataTypeKey]!
+    let healthStore = HKHealthStore()
+    let predicate = HKQuery.predicateForSamples(
+      withStart: startDate, end: endDate, options: .strictStartDate)
+
+    var count: Double?
+    var objectType: HKQuantityType?
+
+    if dataTypeKey == "steps" {
+      objectType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
+    } else if dataTypeKey == "distance_walking_running" {
+      objectType = HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!
+    } else if dataTypeKey == "active_energy_burned" {
+      objectType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
+    } else {
+      self.logger.info("Invalid data type \(dataTypeKey)")
+      return
+    }
+
+    let query = HKStatisticsQuery(
+      quantityType: objectType!,
+      quantitySamplePredicate: predicate, options: .cumulativeSum
+    ) { (_, result, error) in
+      guard let result = result, let sum = result.sumQuantity() else {
+        self.logger.info("Failed to fetch aggregated data")
+        // return -1 if failed to fetch
+        completion(-1)
+        return
+      }
+      count = Double(sum.doubleValue(for: HKUnit.count()))
+      completion(count)
+    }
+    healthStore.execute(query)
+  }
+
   func getDataFromType(
     dataTypeKey: String, currentDate: Date, completion: @escaping ([NSDictionary]) -> Void
   ) {

@@ -42,6 +42,16 @@ public class HekaManager {
   public func installObservers() {
     healthStore.setupObserverQuery()
   }
+
+  public func getAggregatedValueForDataType(
+    dataType: String, startDate: Date, endDate: Date, completion: @escaping (Double?) -> Void
+  ) {
+    healthStore.getAggregatedValueCount(
+      startDate: startDate, endDate: endDate, dataTypeKey: dataType
+    ) { result in
+      completion(result)
+    }
+  }
 }
 
 public func getDeviceId() -> String {
