@@ -265,6 +265,16 @@ class HealthStore {
       objectType = HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!
     } else if dataTypeKey == "active_energy_burned" {
       objectType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
+    } else if dataTypeKey == "move_minutes" {
+      if #available(iOS 14.5, *) {
+        objectType = HKQuantityType.quantityType(forIdentifier: .appleMoveTime)!
+      } else {
+        // move minutes is not available
+        completion(-1)
+        return
+      }
+    } else if dataTypeKey == "exercise_minutes" {
+      objectType = HKQuantityType.quantityType(forIdentifier: .appleExerciseTime)!
     } else {
       self.logger.info("Invalid data type \(dataTypeKey)")
       return
@@ -280,7 +290,17 @@ class HealthStore {
         completion(-1)
         return
       }
-      count = Double(sum.doubleValue(for: HKUnit.count()))
+      if dataTypeKey == "steps" {
+        count = Double(sum.doubleValue(for: HKUnit.count()))
+      } else if dataTypeKey == "distance_walking_running" {
+        count = Double(sum.doubleValue(for: HKUnit.meter()))
+      } else if dataTypeKey == "active_energy_burned" {
+        count = Double(sum.doubleValue(for: HKUnit.kilocalorie()))
+      } else if dataTypeKey == "move_minutes" {
+        count = Double(sum.doubleValue(for: HKUnit.minute()))
+      } else if dataTypeKey == "exercise_minutes" {
+        count = Double(sum.doubleValue(for: HKUnit.minute()))
+      }
       completion(count)
     }
     healthStore.execute(query)
