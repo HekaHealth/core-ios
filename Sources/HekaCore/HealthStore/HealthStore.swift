@@ -270,7 +270,7 @@ class HealthStore {
         objectType = HKQuantityType.quantityType(forIdentifier: .appleMoveTime)!
       } else {
         // move minutes is not available
-        completion(-1)
+        completion(0)
         return
       }
     } else if dataTypeKey == "exercise_minutes" {
@@ -286,8 +286,8 @@ class HealthStore {
     ) { (_, result, error) in
       guard let result = result, let sum = result.sumQuantity() else {
         self.logger.info("Failed to fetch aggregated data")
-        // return -1 if failed to fetch
-        completion(-1)
+        // return 0 if failed to fetch
+        completion(0)
         return
       }
       if dataTypeKey == "steps" {
