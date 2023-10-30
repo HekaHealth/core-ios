@@ -259,29 +259,43 @@ class HealthStore {
     var count: Double?
     var objectType: HKQuantityType?
 
-    if dataTypeKey == "steps" {
-      objectType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
-    } else if dataTypeKey == "distance_walking_running" {
-      objectType = HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!
-    } else if dataTypeKey == "active_energy_burned" {
-      objectType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
-    } else if dataTypeKey == "move_minutes" {
-      if #available(iOS 14.5, *) {
-        objectType = HKQuantityType.quantityType(forIdentifier: .appleMoveTime)!
-      } else {
-        // move minutes is not available
-        completion(0)
-        return
-      }
-    } else if dataTypeKey == "exercise_minutes" {
-      objectType = HKQuantityType.quantityType(forIdentifier: .appleExerciseTime)!
-    } else {
+    let dataTypeMap: [String: (type: HKQuantityType, unit: HKUnit)] = [
+      "steps": (HKQuantityType.quantityType(forIdentifier: .stepCount)!, HKUnit.count()),
+      "distance_moved": (
+        HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!, HKUnit.meter()
+      ),
+      "calories": (
+        HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!, HKUnit.kilocalorie()
+      ),
+      "move_minutes": (
+        HKQuantityType.quantityType(forIdentifier: .appleMoveTime)!, HKUnit.minute()
+      ),
+      "exercise_minutes": (
+        HKQuantityType.quantityType(forIdentifier: .appleExerciseTime)!, HKUnit.minute()
+      ),
+      "floors_climbed": (
+        HKQuantityType.quantityType(forIdentifier: .flightsClimbed)!, HKUnit.count()
+      ),
+      "resting_heart_rate": (
+        HKQuantityType.quantityType(forIdentifier: .restingHeartRate)!,
+        HKUnit.count().unitDivided(by: HKUnit.minute())
+      ),
+      "weight": (
+        HKQuantityType.quantityType(forIdentifier: .bodyMass)!, HKUnit.gramUnit(with: .kilo)
+      ),
+      "height": (HKQuantityType.quantityType(forIdentifier: .height)!, HKUnit.meter()),
+      "blood_oxygen": (
+        HKQuantityType.quantityType(forIdentifier: .oxygenSaturation)!, HKUnit.percent()
+      ),
+    ]
+
+    guard let (objectType, unit) = dataTypeMap[dataTypeKey] else {
       self.logger.info("Invalid data type \(dataTypeKey)")
       return
     }
 
     let query = HKStatisticsQuery(
-      quantityType: objectType!,
+      quantityType: objectType,
       quantitySamplePredicate: predicate, options: .cumulativeSum
     ) { (_, result, error) in
       guard let result = result, let sum = result.sumQuantity() else {
@@ -290,17 +304,7 @@ class HealthStore {
         completion(0)
         return
       }
-      if dataTypeKey == "steps" {
-        count = Double(sum.doubleValue(for: HKUnit.count()))
-      } else if dataTypeKey == "distance_walking_running" {
-        count = Double(sum.doubleValue(for: HKUnit.meter()))
-      } else if dataTypeKey == "active_energy_burned" {
-        count = Double(sum.doubleValue(for: HKUnit.kilocalorie()))
-      } else if dataTypeKey == "move_minutes" {
-        count = Double(sum.doubleValue(for: HKUnit.minute()))
-      } else if dataTypeKey == "exercise_minutes" {
-        count = Double(sum.doubleValue(for: HKUnit.minute()))
-      }
+      count = Double(sum.doubleValue(for: unit))
       completion(count)
     }
     healthStore.execute(query)
