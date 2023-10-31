@@ -8,7 +8,6 @@
 import Foundation
 import HealthKit
 import Logging
-import PromiseKit
 
 class HealthStore {
   var healthStore: HKHealthStore?
@@ -137,12 +136,8 @@ class HealthStore {
       healthDataTypesToFetch.append(self.healthkitDataTypes.SLEEP_ANALYSIS)
     }
 
-    // Get steps and upload to server
-    firstly {
-      self.combineResults(
-        healthDataTypes: healthDataTypesToFetch,
-        currentDate: currentDate)
-    }.done { samples in
+    self.combineResults(healthDataTypes: healthDataTypesToFetch, currentDate: currentDate) {
+      samples in
       if !samples.isEmpty {
         self.logger.info("got the samples in the observer query callback, sending them to server")
         self.handleUserData(
@@ -150,7 +145,7 @@ class HealthStore {
         ) {
           self.queryInProgress = false
           self.logger.info("unmarking query in progress")
-          return completion()
+          completion()
         }
       }
     }
@@ -182,36 +177,31 @@ class HealthStore {
     return
   }
 
-  func combineResults(healthDataTypes: [String], currentDate: Date) -> Promise<
-    [String: [NSDictionary]]
-  > {
+  func combineResults(
+    healthDataTypes: [String], currentDate: Date,
+    completion: @escaping ([String: [NSDictionary]]) -> Void
+  ) {
     self.logger.info("fetching data for various data types and combining it")
-    var promises = [Promise<[NSDictionary]>]()
+    let group = DispatchGroup()
     var results: [String: [NSDictionary]] = [:]
 
-    for healthDataType in healthDataTypes {
-      promises.append(getSamples(type: healthDataType, currentDate: currentDate))
+    for healthDataType: String in healthDataTypes {
+      group.enter()
+      getSamples(type: healthDataType, currentDate: currentDate) { (value) in
+        if !value.isEmpty {
+          results[healthDataType.lowercased()] = value
+        }
+        group.leave()
+      }
     }
 
-    return when(fulfilled: promises).map { value in
-      for (index, type) in healthDataTypes.enumerated() {
-        if !value[index].isEmpty {
-          results[type.lowercased()] = value[index]
-        }
-      }
-      return results
+    group.notify(queue: .main) {
+      completion(results)
     }
   }
 
-  func getSamples(type: String, currentDate: Date) -> Promise<[NSDictionary]> {
-    return Promise<[NSDictionary]> { seal in
-      getDataFromType(
-        dataTypeKey: type,
-        currentDate: currentDate,
-        completion: { dict in
-          seal.fulfill(dict)
-        })
-    }
+  func getSamples(type: String, currentDate: Date, completion: @escaping ([NSDictionary]) -> Void) {
+    getDataFromType(dataTypeKey: type, currentDate: currentDate, completion: completion)
   }
 
   func getAggregatedValueCount(

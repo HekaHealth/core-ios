@@ -2,15 +2,6 @@
   "object": {
     "pins": [
       {
-        "package": "PromiseKit",
-        "repositoryURL": "https://github.com/mxcl/PromiseKit",
-        "state": {
-          "branch": null,
-          "revision": "5b90042bb419e6f3b1719c973f37e1eab46ce991",
-          "version": "6.21.0"
-        }
-      },
-      {
         "package": "swift-log",
         "repositoryURL": "https://github.com/apple/swift-log.git",
         "state": {
