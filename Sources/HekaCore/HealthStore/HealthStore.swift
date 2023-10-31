@@ -7,7 +7,6 @@
 
 import Foundation
 import HealthKit
-import Logging
 
 class HealthStore {
   var healthStore: HKHealthStore?
@@ -19,7 +18,6 @@ class HealthStore {
 
   private let hekaKeyChainHelper = HekaKeychainHelper()
   private let fileHandler = JSONFileHandler()
-  let logger = Logger(label: "HealthStore")
 
   init() {
     if HKHealthStore.isHealthDataAvailable() {
@@ -31,19 +29,19 @@ class HealthStore {
   }
 
   func writePendingAnchorUpdates() {
-    self.logger.info("writing pending anchor updates")
+    print("writing pending anchor updates")
     let pendingAnchorUpdates = self.pendingAnchorUpdates
     for (key, value) in pendingAnchorUpdates {
-      self.logger.info("writing pending anchor update for \(key)")
+      print("writing pending anchor update for \(key)")
       self.hekaKeyChainHelper.setAnchor(value, for: key)
     }
     self.pendingAnchorUpdates = [:]
   }
 
   func requestAuthorization(completion: @escaping (Bool) -> Void) {
-    self.logger.info("requesting authorization from healthkit")
+    print("requesting authorization from healthkit")
     guard let healthStore = self.healthStore else {
-      self.logger.info("healthstore not found, returning false")
+      print("healthstore not found, returning false")
       return completion(false)
     }
 
@@ -51,12 +49,12 @@ class HealthStore {
       toShare: [], read: Set(self.healthkitDataTypes.healthDataTypes)
     ) { bool, error in
       if error != nil {
-        self.logger.info("request auth returned error, returning false")
+        print("request auth returned error, returning false")
         return completion(false)
       } else if bool == true {
         return completion(true)
       } else {
-        self.logger.info("request auth returned false, returning false")
+        print("request auth returned false, returning false")
         return completion(false)
       }
 
@@ -64,7 +62,7 @@ class HealthStore {
   }
 
   func stopObserverQuery() {
-    self.logger.info("stopping healthkit observer query")
+    print("stopping healthkit observer query")
     if let query = obsQuery {
       healthStore?.stop(query)
     }
@@ -74,7 +72,7 @@ class HealthStore {
   // Public function to start syncing health data to server
   // This needs to be called in AppDelegate.swift
   public func setupObserverQuery() {
-    self.logger.info("setting up healthkit observer query (public function)")
+    print("setting up healthkit observer query (public function)")
     setupStepsObserverQuery()
   }
 
@@ -84,16 +82,16 @@ class HealthStore {
     obsQuery = HKObserverQuery(sampleType: stepCountType, predicate: nil) {
       (query, completionHandler, errorOrNil) in
 
-      self.logger.info("we are in the observer query callback")
+      print("we are in the observer query callback")
 
       if let error = errorOrNil {
-        self.logger.error("error in observer query callback: \(error)")
+        print("error in observer query callback: \(error)")
         completionHandler()
         return
       }
       // if we are not connected, let's ignore the update
       if !self.hekaKeyChainHelper.isConnected {
-        self.logger.info("we are not connected, so ignoring the observer query update")
+        print("we are not connected, so ignoring the observer query update")
         completionHandler()
         return
       }
@@ -103,7 +101,7 @@ class HealthStore {
       }
     }
 
-    self.logger.info("executing observer query")
+    print("executing observer query")
     if healthStore != nil {
       healthStore!.execute(obsQuery!)
     }
@@ -112,16 +110,16 @@ class HealthStore {
   public func triggerSync(completion: @escaping () -> Void) {
     // TODO: this should be replaced with HKAnchoredObjectQuery
     if self.queryInProgress {
-      self.logger.info("a query in progress, so ignoring the observer query update")
+      print("a query in progress, so ignoring the observer query update")
       return completion()
     }
 
-    self.logger.info("triggering sync")
+    print("triggering sync")
     let userUuid = self.hekaKeyChainHelper.userUuid
     let apiKey = self.hekaKeyChainHelper.apiKey
 
     self.queryInProgress = true
-    self.logger.info("marking query in progress")
+    print("marking query in progress")
 
     let currentDate = Date()
 
@@ -139,12 +137,12 @@ class HealthStore {
     self.combineResults(healthDataTypes: healthDataTypesToFetch, currentDate: currentDate) {
       samples in
       if !samples.isEmpty {
-        self.logger.info("got the samples in the observer query callback, sending them to server")
+        print("got the samples in the observer query callback, sending them to server")
         self.handleUserData(
           with: samples, apiKey: apiKey!, uuid: userUuid!, currentDate: currentDate
         ) {
           self.queryInProgress = false
-          self.logger.info("unmarking query in progress")
+          print("unmarking query in progress")
           completion()
         }
       }
@@ -153,7 +151,7 @@ class HealthStore {
 
   public func setupBackgroundDelivery() {
     let stepCountType = HKObjectType.quantityType(forIdentifier: .stepCount)!
-    self.logger.info("enabling background delivery")
+    print("enabling background delivery")
     healthStore!.enableBackgroundDelivery(
       for: stepCountType, frequency: .immediate,
       withCompletion: { (succeeded, error) in
@@ -181,7 +179,7 @@ class HealthStore {
     healthDataTypes: [String], currentDate: Date,
     completion: @escaping ([String: [NSDictionary]]) -> Void
   ) {
-    self.logger.info("fetching data for various data types and combining it")
+    print("fetching data for various data types and combining it")
     let group = DispatchGroup()
     var results: [String: [NSDictionary]] = [:]
 
@@ -207,7 +205,7 @@ class HealthStore {
   func getAggregatedValueCount(
     startDate: Date, endDate: Date, dataTypeKey: String, completion: @escaping (Double?) -> Void
   ) {
-    self.logger.info(
+    print(
       "getting aggregated value count for \(dataTypeKey) from \(startDate) to \(endDate)")
     //  let dataType : HKSampleType = self.healthkitDataTypes.dataTypesDict[dataTypeKey]!
     let healthStore = HKHealthStore()
@@ -234,7 +232,7 @@ class HealthStore {
     } else if dataTypeKey == "exercise_minutes" {
       objectType = HKQuantityType.quantityType(forIdentifier: .appleExerciseTime)!
     } else {
-      self.logger.info("Invalid data type \(dataTypeKey)")
+      print("Invalid data type \(dataTypeKey)")
       return
     }
 
@@ -243,7 +241,7 @@ class HealthStore {
       quantitySamplePredicate: predicate, options: .cumulativeSum
     ) { (_, result, error) in
       guard let result = result, let sum = result.sumQuantity() else {
-        self.logger.info("Failed to fetch aggregated data")
+        print("Failed to fetch aggregated data")
         // return 0 if failed to fetch
         completion(0)
         return
@@ -267,7 +265,7 @@ class HealthStore {
   func getDataFromType(
     dataTypeKey: String, currentDate: Date, completion: @escaping ([NSDictionary]) -> Void
   ) {
-    self.logger.info("getting data for data type: \(dataTypeKey)")
+    print("getting data for data type: \(dataTypeKey)")
     let dataType = self.healthkitDataTypes.dataTypesDict[dataTypeKey]
     var predicate: NSPredicate? = nil
     var anchor: HKQueryAnchor? = self.hekaKeyChainHelper.getAnchor(for: dataTypeKey)
@@ -292,7 +290,7 @@ class HealthStore {
       (x, samplesOrNil, deletedObjectsOrNil, newAnchor, error) in
 
       guard error == nil else {
-        self.logger.error("Error in getting \(dataTypeKey) data: \(error!)")
+        print("Error in getting \(dataTypeKey) data: \(error!)")
         completion([])
         return
       }
@@ -305,7 +303,7 @@ class HealthStore {
           completion([])
           return
         }
-        self.logger.info("got \(samples.count) samples for \(dataTypeKey)")
+        print("got \(samples.count) samples for \(dataTypeKey)")
         let unit = self.healthkitDataTypes.dataTypeToUnit[dataTypeKey]
 
         let dictionaries = samples.map { sample -> NSDictionary in

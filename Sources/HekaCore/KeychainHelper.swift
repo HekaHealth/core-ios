@@ -6,13 +6,10 @@
 //
 
 import HealthKit
-import Logging
 import Security
 import UIKit
 
 final class HekaKeychainHelper {
-
-  let logger = Logger(label: "HekaKeychainHelper")
 
   private struct KeychainData: Codable {
     var apiKey: String
@@ -35,7 +32,7 @@ final class HekaKeychainHelper {
 
   func getAnchor(for dataType: String) -> HKQueryAnchor? {
     let typeKey = anchorKey + "." + dataType
-    logger.info("Getting anchor for \(dataType)")
+    print("Getting anchor for \(dataType)")
     guard let data = load(key: typeKey) else {
       return nil
     }
@@ -44,7 +41,7 @@ final class HekaKeychainHelper {
 
   func setAnchor(_ anchor: HKQueryAnchor, for dataType: String) {
     let typeKey = anchorKey + "." + dataType
-    logger.info("Setting anchor for \(dataType)")
+    print("Setting anchor for \(dataType)")
     guard
       let data = try? NSKeyedArchiver.archivedData(
         withRootObject: anchor, requiringSecureCoding: true)
@@ -56,14 +53,14 @@ final class HekaKeychainHelper {
 
   private var keychainData: KeychainData? {
     get {
-      logger.info("Getting keychain data")
+      print("Getting keychain data")
       guard let data = load(key: keychainKey) else {
         return nil
       }
       return try? JSONDecoder().decode(KeychainData.self, from: data)
     }
     set {
-      logger.info("Setting keychain data")
+      print("Setting keychain data")
       guard let data = try? JSONEncoder().encode(newValue) else {
         return
       }
@@ -72,7 +69,7 @@ final class HekaKeychainHelper {
   }
 
   func markFirstUpload(syncDate: Date) {
-    logger.info("marking first upload in keychain")
+    print("marking first upload in keychain")
     var data =
       keychainData ?? KeychainData(apiKey: "", uuid: "", connected: false, firstUploadDate: nil)
     data.firstUploadDate = syncDate
@@ -82,7 +79,7 @@ final class HekaKeychainHelper {
   func markConnected(
     apiKey: String, uuid: String, firstUploadDate: Date? = nil, completion: @escaping () -> Void
   ) {
-    logger.info("marking connected in keychain")
+    print("marking connected in keychain")
     var data =
       keychainData ?? KeychainData(apiKey: "", uuid: "", connected: false, firstUploadDate: nil)
     data.connected = true
@@ -94,7 +91,7 @@ final class HekaKeychainHelper {
   }
 
   func markDisconnected() {
-    logger.info("marking disconnected in keychain")
+    print("marking disconnected in keychain")
     var data =
       keychainData ?? KeychainData(apiKey: "", uuid: "", connected: false, firstUploadDate: nil)
     data.connected = false
