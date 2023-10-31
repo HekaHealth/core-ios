@@ -19,7 +19,6 @@ class HealthStore {
   private let healthkitDataTypes = HealthKitDataTypes()
 
   private let hekaKeyChainHelper = HekaKeychainHelper()
-  private var uploadClient: FileUploadClinet?
   private let fileHandler = JSONFileHandler()
   let logger = Logger(label: "HealthStore")
 
@@ -180,38 +179,7 @@ class HealthStore {
     currentDate: Date,
     with completion: @escaping () -> Void
   ) {
-    var totalCount = 0
-    for (_, value) in samples {
-      if let value = value as? [NSDictionary] {
-        totalCount += value.count
-      }
-    }
-    self.logger.info("sending \(samples.count) samples to server")
-    fileHandler.createJSONFile(with: samples) { filePath in
-      if filePath == nil {
-        self.logger.info("failed to create JSON file")
-        completion()
-        return
-      }
-      self.uploadClient = FileUploadClinet(
-        apiKey: apiKey, userUUID: uuid
-      )
-
-      self.uploadClient?.uploadUserDataFile(
-        from: filePath, with: FileDetails()
-      ) { syncSuccessful in
-        switch syncSuccessful {
-        case true:
-          self.logger.info("Data synced successfully")
-          self.hekaKeyChainHelper.markFirstUpload(syncDate: currentDate)
-          self.writePendingAnchorUpdates()
-        case false:
-          self.logger.info("Data synced failed")
-        }
-        self.fileHandler.deleteJSONFile()
-        completion()
-      }
-    }
+    return
   }
 
   func combineResults(healthDataTypes: [String], currentDate: Date) -> Promise<

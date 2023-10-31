@@ -5,32 +5,53 @@
 //  Created by Gaurav Tiwari on 19/02/23.
 //
 
-import Alamofire
 import Foundation
+import SystemConfiguration
 
 typealias WebResponse = (Result<[String: Any], Error>) -> Void
 
-protocol Endpoint {
-  var url: String { get }
-  var method: HTTPMethod { get }
-  var parameters: Parameters? { get }
-  var encoding: ParameterEncoding { get }
+func isNetworkReachable() -> Bool {
+  var zeroAddress = sockaddr_in()
+  zeroAddress.sin_len = UInt8(MemoryLayout.size(ofValue: zeroAddress))
+  zeroAddress.sin_family = sa_family_t(AF_INET)
+
+  guard
+    let defaultRouteReachability = withUnsafePointer(
+      to: &zeroAddress,
+      {
+        $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+          SCNetworkReachabilityCreateWithAddress(nil, $0)
+        }
+      })
+  else {
+    return false
+  }
+
+  var flags: SCNetworkReachabilityFlags = []
+  if !SCNetworkReachabilityGetFlags(defaultRouteReachability, &flags) {
+    return false
+  }
+
+  let isReachable = flags.contains(.reachable)
+  let needsConnection = flags.contains(.connectionRequired)
+
+  return (isReachable && !needsConnection)
 }
 
-//MARK: - Common Properties and Configurations
+protocol Endpoint {
+  var url: String { get }
+  var method: String { get }
+  var parameters: [String: Any]? { get }
+  var headers: [String: String] { get }
+}
+
 extension Endpoint {
   var base: String {
     "https://heka-backend.delightfulmeadow-20fa0dd3.australiaeast.azurecontainerapps.io/watch_sdk"
   }
 
-  var encoding: ParameterEncoding {
-    return JSONEncoding.default
-  }
-
-  var header: HTTPHeaders {
-    var headers = HTTPHeaders()
-    headers["Content-Type"] = "application/json"
-    return headers
+  var headers: [String: String] {
+    return ["Content-Type": "application/json"]
   }
 }
 
@@ -48,18 +69,34 @@ extension Endpoint {
     responseClosure: @escaping WebResponse
   ) {
 
-    if !NetworkReachabilityManager()!.isReachable {
+    if !isNetworkReachable() {
       //TODO: - Throw error here
       return
     }
-
     printRequest()
 
-    AF.request(
-      url, method: method, parameters: parameters, encoding: encoding
-    ).response { result in
-      self.handle(result.result, responseClosure: responseClosure)
+    // Assuming url, method, and parameters are defined
+    guard let url = URL(string: url) else {
+      print("Invalid URL")
+      return
     }
+
+    var request = URLRequest(url: url)
+    request.httpMethod = method  // "GET", "POST", etc.
+
+    if let parameters = parameters {
+      request.httpBody = try? JSONSerialization.data(withJSONObject: parameters)
+    }
+
+    let task = URLSession.shared.dataTask(with: request) { (data, response, error) in
+      if let error = error {
+        self.handle(.failure(error), responseClosure: responseClosure)
+      } else if let data = data {
+        self.handle(.success(data), responseClosure: responseClosure)
+      }
+    }
+
+    task.resume()
   }
 
   private func printRequest() {
@@ -67,10 +104,10 @@ extension Endpoint {
       "********************************* API Request **************************************")
     debugPrint("Request URL:\(url)")
     debugPrint("Request Parameters: \(parameters ?? [:])")
-    debugPrint("Request Headers: \(header)")
+    debugPrint("Request Headers: \(headers)")
   }
 
-  private func handle(_ response: Result<Data?, AFError>, responseClosure: WebResponse) {
+  private func handle(_ response: Result<Data?, Error>, responseClosure: WebResponse) {
     switch response {
     case .success(let data):
       debugPrint("Response:---------->")
