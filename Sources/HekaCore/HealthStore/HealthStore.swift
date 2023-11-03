@@ -252,7 +252,6 @@ class HealthStore {
     self.logger.info(
       "getting aggregated value count for \(dataTypeKey) from \(startDate) to \(endDate)")
     //  let dataType : HKSampleType = self.healthkitDataTypes.dataTypesDict[dataTypeKey]!
-    let healthStore = HKHealthStore()
     let predicate = HKQuery.predicateForSamples(
       withStart: startDate, end: endDate, options: .strictStartDate)
 
@@ -307,7 +306,9 @@ class HealthStore {
       count = Double(sum.doubleValue(for: unit))
       completion(count)
     }
-    healthStore.execute(query)
+    if self.healthStore != nil {
+      self.healthStore!.execute(query)
+    }
   }
 
   func getDataFromType(
