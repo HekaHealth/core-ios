@@ -258,7 +258,7 @@ class HealthStore {
     var count: Double?
     var objectType: HKQuantityType?
 
-    let dataTypeMap: [String: (type: HKQuantityType, unit: HKUnit)] = [
+    var dataTypeMap: [String: (type: HKQuantityType, unit: HKUnit)] = [
       "steps": (HKQuantityType.quantityType(forIdentifier: .stepCount)!, HKUnit.count()),
       "distance_moved": (
         HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!, HKUnit.meter()
@@ -266,9 +266,7 @@ class HealthStore {
       "calories": (
         HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!, HKUnit.kilocalorie()
       ),
-      "move_minutes": (
-        HKQuantityType.quantityType(forIdentifier: .appleMoveTime)!, HKUnit.minute()
-      ),
+
       "exercise_minutes": (
         HKQuantityType.quantityType(forIdentifier: .appleExerciseTime)!, HKUnit.minute()
       ),
@@ -287,6 +285,11 @@ class HealthStore {
         HKQuantityType.quantityType(forIdentifier: .oxygenSaturation)!, HKUnit.percent()
       ),
     ]
+    if #available(iOS 14.5, *) {
+      dataTypeMap["move_minutes"] = (
+        HKQuantityType.quantityType(forIdentifier: .appleMoveTime)!, HKUnit.minute()
+      )
+    }
 
     guard let (objectType, unit) = dataTypeMap[dataTypeKey] else {
       self.logger.info("Invalid data type \(dataTypeKey)")
