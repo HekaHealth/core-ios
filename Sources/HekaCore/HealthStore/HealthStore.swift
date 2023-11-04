@@ -246,6 +246,44 @@ class HealthStore {
     }
   }
 
+  func getMenstrualData(
+    startDate: Date, endDate: Date, completion: @escaping ([NSDictionary]) -> Void
+  ) {
+    self.logger.info("getting menstrual data")
+    let predicate = HKQuery.predicateForSamples(
+      withStart: startDate, end: endDate, options: .strictStartDate)
+
+    let query = HKSampleQuery(
+      sampleType: HKObjectType.categoryType(forIdentifier: .menstrualFlow)!,
+      predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil
+    ) { (_, samplesOrNil, error) in
+      guard let samples = samplesOrNil as? [HKCategorySample] else {
+        self.logger.info("Failed to fetch menstrual data")
+        completion([])
+        return
+      }
+
+      let dictionaries = samples.map { sample -> NSDictionary in
+        return [
+          "uuid": "\(sample.uuid)",
+          "flow": sample.value,
+          "date_from": Int(sample.startDate.timeIntervalSince1970 * 1000),
+          "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
+          "source_id": sample.sourceRevision.source.bundleIdentifier,
+          "source_name": sample.sourceRevision.source.name,
+          "cycle_start": sample.metadata?["HKMenstrualCycleStart"] as? Bool ?? false,
+        ]
+      }
+
+      self.logger.info("got \(dictionaries.count) menstrual samples")
+
+      completion(dictionaries)
+    }
+    if self.healthStore != nil {
+      self.healthStore!.execute(query)
+    }
+  }
+
   func getAggregatedValueCount(
     startDate: Date, endDate: Date, dataTypeKey: String, completion: @escaping (Double?) -> Void
   ) {

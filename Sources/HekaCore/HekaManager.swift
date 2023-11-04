@@ -52,6 +52,14 @@ public class HekaManager {
       completion(result)
     }
   }
+
+  public func getMenstrualData(
+    startDate: Date, endDate: Date, completion: @escaping ([NSDictionary]) -> Void
+  ) {
+    healthStore.getMenstrualData(startDate: startDate, endDate: endDate) { result in
+      completion(result)
+    }
+  }
 }
 
 public func getDeviceId() -> String {
